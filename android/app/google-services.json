@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "813437509513",
+    "project_id": "first-project-7a4b1",
+    "storage_bucket": "first-project-7a4b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813437509513:android:bbba4b5f797a06f758cb58",
+        "android_client_info": {
+          "package_name": "com.example.app_shark_tank"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8_9WksLEZa8VHIQcl7YCN7ENAyyn3qTs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
