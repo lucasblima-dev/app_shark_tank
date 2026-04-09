@@ -1,3 +1,4 @@
+import 'package:app_shark_tank/features/admin/presentation/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,15 +19,15 @@ class SharkTankApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Shark Tank Sim',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF121212),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF00BFA5),
           brightness: Brightness.dark,
         ),
       ),
-      home: const Scaffold(
-        body: Center(child: Text('Shark Tank Simulator - Firebase Conectado!')),
-      ),
+      home: const AdminDashboardScreen(), // <-- Chama a tela do Admin aqui
     );
   }
 }
