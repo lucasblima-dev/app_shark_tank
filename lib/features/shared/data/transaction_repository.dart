@@ -27,14 +27,21 @@ class TransactionRepository {
           throw Exception('Operação negada: Saldo insuficiente.');
         }
 
+        // Limite da %
         if (transaction.equityPercentage <= 0 ||
             transaction.equityPercentage > 100) {
           throw Exception('A porcentagem de equity deve estar entre 1 e 100.');
         }
 
-        final newCapital = currentCapital - transaction.investmentValue;
+        //Move o dinheiro para algo como "Congelado/Fantasma"
+        final newAvailable = currentCapital - transaction.investmentValue;
+        final currentReserved = sharkData.reservedCapital ?? 0.0;
+        final newReserved = currentReserved + transaction.investmentValue;
 
-        tx.update(sharkRef, {'availableCapital': newCapital});
+        tx.update(sharkRef, {
+          'availableCapital': newAvailable,
+          'reservedCapital': newReserved,
+        });
 
         tx.set(transactionRef, transaction.toMap());
       });

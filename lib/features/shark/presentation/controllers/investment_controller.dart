@@ -27,6 +27,7 @@ class InvestmentController extends StateNotifier<AsyncValue<void>> {
         ideaName: ideaName,
         investmentValue: value,
         equityPercentage: equity,
+        status: 'pending_proponent',
         timestamp: DateTime.now(),
       );
 
