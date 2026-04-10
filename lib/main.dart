@@ -1,4 +1,7 @@
-import 'package:app_shark_tank/features/admin/presentation/admin_dashboard_screen.dart';
+//import 'package:app_shark_tank/features/admin/presentation/admin_dashboard_screen.dart';
+import 'package:app_shark_tank/features/auth/presentation/login_screen.dart';
+//import 'package:app_shark_tank/features/shared/domain/models/user_model.dart';
+//import 'package:app_shark_tank/features/shark/presentation/shark_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +21,7 @@ class SharkTankApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Shark Tank Sim',
+      title: 'Shark Tank App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF121212),
@@ -27,7 +30,7 @@ class SharkTankApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const AdminDashboardScreen(), // <-- Chama a tela do Admin aqui
+      home: const LoginScreen(),
     );
   }
 }
