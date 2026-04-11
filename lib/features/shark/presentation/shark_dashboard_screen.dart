@@ -1,103 +1,37 @@
-import 'package:app_shark_tank/features/shared/presentation/widget/premium_text_field.dart';
+import 'package:app_shark_tank/features/shared/data/shared_providers.dart';
+import 'package:app_shark_tank/features/shared/domain/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:confetti/confetti.dart';
-import 'dart:math';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../shared/domain/models/user_model.dart';
-//import '../../shared//presentation/widget/premium_text_field.dart';
+//import '../../shared/domain/models/user_model.dart';
+//import '../../../shared/data/shared_providers.dart';
 import '../../auth/presentation/login_screen.dart';
-import 'controllers/investment_controller.dart';
 import 'widgets/balance_card.dart';
+import 'widgets/proponent_showcase_card.dart';
+import 'widgets/shark_counter_offer_card.dart';
+import '../../proponent/presentation/widgets/accepted_card_shark.dart';
 
-class SharkDashboardScreen extends ConsumerStatefulWidget {
+class SharkDashboardScreen extends ConsumerWidget {
   final UserModel sharkUser;
+
   const SharkDashboardScreen({super.key, required this.sharkUser});
 
   @override
-  ConsumerState<SharkDashboardScreen> createState() =>
-      _SharkDashboardScreenState();
-}
-
-class _SharkDashboardScreenState extends ConsumerState<SharkDashboardScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late ConfettiController _confettiController;
-  final _proponentIdController = TextEditingController();
-  final _ideaNameController = TextEditingController();
-  final _valueController = TextEditingController();
-  final _equityController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 2),
-    );
-  }
-
-  @override
-  void dispose() {
-    _confettiController.dispose();
-    _proponentIdController.dispose();
-    _ideaNameController.dispose();
-    _valueController.dispose();
-    _equityController.dispose();
-    super.dispose();
-  }
-
-  void _submitInvestment() async {
-    if (!_formKey.currentState!.validate()) return;
-    FocusScope.of(context).unfocus();
-
-    await ref
-        .read(investmentControllerProvider.notifier)
-        .makeInvestment(
-          sharkId: widget.sharkUser.id,
-          proponentId: _proponentIdController.text.trim(),
-          ideaName: _ideaNameController.text.trim(),
-          value: double.parse(_valueController.text),
-          equity: double.parse(_equityController.text),
-        );
-
-    final state = ref.read(investmentControllerProvider);
-
-    if (state.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro: ${state.error}'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } else {
-      _confettiController.play();
-      _proponentIdController.clear();
-      _ideaNameController.clear();
-      _valueController.clear();
-      _equityController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🤝 DEAL DONE!'),
-          backgroundColor: AppColors.emerald,
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isLoading = ref.watch(investmentControllerProvider).isLoading;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // corrigir o bug do saldo estático
+    final usersAsync = ref.watch(usersStreamProvider);
+    final transactionsAsync = ref.watch(transactionsStreamProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: Text(
-          'Investidor: ${widget.sharkUser.name}',
+          'Investidor: ${sharkUser.name}',
           style: const TextStyle(fontWeight: FontWeight.w300),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: AppColors.error),
@@ -108,98 +42,122 @@ class _SharkDashboardScreenState extends ConsumerState<SharkDashboardScreen> {
           ),
         ],
       ),
-      body: Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                BalanceCard(balance: widget.sharkUser.availableCapital ?? 0.0),
-                const SizedBox(height: 40),
-                const Text(
-                  'NOVO APORTE',
-                  style: TextStyle(
-                    color: AppColors.textWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
+      body: usersAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.gold),
+        ),
+        error: (e, stack) => Center(child: Text('Erro: $e')),
+        data: (users) {
+          final liveShark = users.firstWhere(
+            (u) => u.id == sharkUser.id,
+            orElse: () => sharkUser,
+          );
+          final proponents = users.where((u) => u.role == 'proponent').toList();
 
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      PremiumTextField(
-                        controller: _proponentIdController,
-                        label: 'ID do Proponente',
-                        icon: Icons.person_outline,
-                      ),
-                      const SizedBox(height: 16),
-                      PremiumTextField(
-                        controller: _ideaNameController,
-                        label: 'Nome da Ideia',
-                        icon: Icons.lightbulb_outline,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: PremiumTextField(
-                              controller: _valueController,
-                              label: 'Valor (\$)',
-                              icon: Icons.attach_money,
-                              isNumber: true,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: PremiumTextField(
-                              controller: _equityController,
-                              label: 'Equity (%)',
-                              icon: Icons.pie_chart_outline,
-                              isNumber: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 40),
-                      SizedBox(
-                        height: 55,
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _submitInvestment,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.emerald,
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                          child: isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.black,
-                                )
-                              : const Text(
-                                  'CONFIRMAR INVESTIMENTO',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
+          return transactionsAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.gold),
+            ),
+            error: (e, stack) => Center(child: Text('Erro: $e')),
+            data: (transactions) {
+              final myTransactions = transactions
+                  .where((t) => t.sharkId == liveShark.id)
+                  .toList();
+              final counterOffers = myTransactions
+                  .where((t) => t.status == 'counter_offered')
+                  .toList();
+              final acceptedDeals = myTransactions
+                  .where((t) => t.status == 'accepted')
+                  .toList();
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    BalanceCard(
+                      balance: liveShark.availableCapital ?? 0.0,
+                      reserved: liveShark.reservedCapital ?? 0.0,
+                    ),
+                    const SizedBox(height: 32),
+
+                    if (counterOffers.isNotEmpty) ...[
+                      const Text(
+                        'CAIXA DE ENTRADA',
+                        style: TextStyle(
+                          color: AppColors.gold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      ...counterOffers.map(
+                        (t) => SharkCounterOfferCard(transaction: t),
+                      ),
+                      const SizedBox(height: 32),
                     ],
-                  ),
+
+                    const Text(
+                      'VITRINE DE STARTUPS',
+                      style: TextStyle(
+                        color: AppColors.textWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 180,
+                      child: proponents.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Nenhuma startup no palco.',
+                                style: TextStyle(color: AppColors.textMuted),
+                              ),
+                            )
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: proponents.length,
+                              itemBuilder: (context, index) {
+                                return ProponentShowcaseCard(
+                                  proponent: proponents[index],
+                                  liveShark: liveShark,
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    const Text(
+                      'MEU PORTFÓLIO',
+                      style: TextStyle(
+                        color: AppColors.textWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    acceptedDeals.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Você ainda não fechou negócios.',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: acceptedDeals.length,
+                            itemBuilder: (context, index) => AcceptedSharkCard(
+                              transaction: acceptedDeals[index],
+                            ),
+                          ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirection: pi / 2,
-            colors: const [AppColors.gold, AppColors.emerald, Colors.white],
-          ),
-        ],
+              );
+            },
+          );
+        },
       ),
     );
   }
