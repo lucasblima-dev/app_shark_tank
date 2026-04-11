@@ -5,7 +5,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../shared/domain/models/user_model.dart';
 import '../../shared/data/shared_providers.dart';
 import '../../auth/presentation/login_screen.dart';
+import 'controllers/proponent_controller.dart';
 import 'widgets/valuation_card.dart';
+import 'widgets/proponent_dialogs.dart';
+import 'widgets/pending_proposal_card.dart';
+import './widgets/accepted_card_shark.dart';
 
 class ProponentDashboardScreen extends ConsumerWidget {
   final UserModel proponentUser;
@@ -14,7 +18,9 @@ class ProponentDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final usersAsync = ref.watch(usersStreamProvider);
     final transactionsAsync = ref.watch(transactionsStreamProvider);
+    final controller = ref.read(proponentControllerProvider.notifier);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -25,7 +31,6 @@ class ProponentDashboardScreen extends ConsumerWidget {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: AppColors.error),
@@ -36,109 +41,129 @@ class ProponentDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: transactionsAsync.when(
+      body: usersAsync.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.emerald),
         ),
-        error: (e, stack) => Center(child: Text('Erro: $e')),
-        data: (allTransactions) {
-          final myInvestments = allTransactions
-              .where((t) => t.proponentId == proponentUser.id)
-              .toList();
-          final totalRaised = myInvestments.fold(
-            0.0,
-            (sum, t) => sum + t.investmentValue,
-          );
-          final totalEquity = myInvestments.fold(
-            0.0,
-            (sum, t) => sum + t.equityPercentage,
+        error: (e, stack) => Center(child: Text('Erro ao ler usuário: $e')),
+        data: (users) {
+          final liveUser = users.firstWhere(
+            (u) => u.id == proponentUser.id,
+            orElse: () => proponentUser,
           );
 
-          return Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ValuationCard(
-                  totalRaised: totalRaised,
-                  totalEquity: totalEquity,
-                ),
-                const SizedBox(height: 40),
-                const Text(
-                  'MEUS SHARKS',
-                  style: TextStyle(
-                    color: AppColors.textWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
+          return transactionsAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.emerald),
+            ),
+            error: (e, stack) => Center(child: Text('Erro nas transações: $e')),
+            data: (allTransactions) {
+              final myInvestments = allTransactions
+                  .where((t) => t.proponentId == liveUser.id)
+                  .toList();
+              final pendingProps = myInvestments
+                  .where((t) => t.status == 'pending_proponent')
+                  .toList();
+              final acceptedProps = myInvestments
+                  .where((t) => t.status == 'accepted')
+                  .toList();
+              final totalRaised = acceptedProps.fold(
+                0.0,
+                (sum, t) => sum + t.investmentValue,
+              );
 
-                Expanded(
-                  child: myInvestments.isEmpty
-                      ? const Center(
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
                           child: Text(
-                            'Aguardando propostas...',
-                            style: TextStyle(color: AppColors.textMuted),
+                            'Ideia: ${liveUser.ideaName ?? "Sem Nome"}',
+                            style: const TextStyle(
+                              color: AppColors.emerald,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: myInvestments.length,
-                          itemBuilder: (context, index) {
-                            final t = myInvestments[index];
-                            return Card(
-                              color: AppColors.cardDark,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(
-                                  color: AppColors.gold.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              child: ListTile(
-                                leading: const Icon(
-                                  Icons.handshake,
-                                  color: AppColors.gold,
-                                ),
-                                title: Text(
-                                  'Shark ID: ${t.sharkId}',
-                                  style: const TextStyle(
-                                    color: AppColors.textWhite,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  'Projeto: ${t.ideaName}',
-                                  style: const TextStyle(
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '\$${t.investmentValue.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                        color: AppColors.emerald,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${t.equityPercentage}%',
-                                      style: const TextStyle(
-                                        color: AppColors.textMuted,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: AppColors.gold),
+                          onPressed: () async {
+                            final newName = await showDialog<String>(
+                              context: context,
+                              builder: (_) => EditIdeaDialog(
+                                currentName: liveUser.ideaName ?? '',
                               ),
                             );
+                            if (newName != null && newName.isNotEmpty)
+                              controller.updateIdeaName(liveUser.id, newName);
                           },
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    ValuationCard(
+                      totalRaised: totalRaised,
+                      totalEquity: liveUser.equityGiven ?? 0.0,
+                    ),
+                    const SizedBox(height: 32),
+
+                    if (pendingProps.isNotEmpty) ...[
+                      const Text(
+                        'PROPOSTAS RECEBIDAS',
+                        style: TextStyle(
+                          color: AppColors.gold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...pendingProps.map(
+                        (t) => PendingProposalCard(
+                          transaction: t,
+                          liveUser: liveUser,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+
+                    const Text(
+                      'MEUS SHARKS',
+                      style: TextStyle(
+                        color: AppColors.textWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    acceptedProps.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Nenhum acordo fechado ainda.',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: acceptedProps.length,
+                            itemBuilder: (context, index) {
+                              return AcceptedSharkCard(
+                                transaction: acceptedProps[index],
+                              );
+                            },
+                          ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

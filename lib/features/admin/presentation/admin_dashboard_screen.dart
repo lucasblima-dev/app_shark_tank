@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/presentation/login_screen.dart';
 import 'widgets/transactions_log_tab.dart';
+import 'widgets/user_form_dialog.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -13,6 +14,17 @@ class AdminDashboardScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: AppColors.emerald,
+          foregroundColor: Colors.black,
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => const UserFormDialog(),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
         appBar: AppBar(
           title: const Text(
             'Painel do Professor',

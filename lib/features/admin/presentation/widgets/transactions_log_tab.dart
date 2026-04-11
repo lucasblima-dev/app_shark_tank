@@ -1,3 +1,4 @@
+import 'package:app_shark_tank/features/admin/presentation/widgets/transactions_timeline_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,11 +14,11 @@ class TransactionsLogTab extends ConsumerWidget {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
         title: const Text(
-          'Desfazer Transação',
+          'Apagar Histórico?',
           style: TextStyle(color: AppColors.textWhite),
         ),
         content: const Text(
-          'Apagar este log NÃO devolverá o saldo ao Shark automaticamente.',
+          'Isso apenas remove o log da tela. O dinheiro NÃO será devolvido automaticamente.',
           style: TextStyle(color: AppColors.textMuted),
         ),
         actions: [
@@ -47,6 +48,48 @@ class TransactionsLogTab extends ConsumerWidget {
     }
   }
 
+  Widget _buildStatusBadge(String status) {
+    Color bgColor;
+    String label;
+
+    switch (status) {
+      case 'accepted':
+        bgColor = AppColors.emerald;
+        label = 'Fechado';
+        break;
+      case 'rejected':
+        bgColor = AppColors.error;
+        label = 'Recusado';
+        break;
+      case 'counter_offered':
+        bgColor = Colors.orangeAccent;
+        label = 'Contraproposta';
+        break;
+      case 'pending_proponent':
+      default:
+        bgColor = AppColors.gold;
+        label = 'Pendente';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: bgColor),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: bgColor,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(transactionsStreamProvider);
@@ -62,7 +105,7 @@ class TransactionsLogTab extends ConsumerWidget {
         if (transactions.isEmpty) {
           return const Center(
             child: Text(
-              'Nenhuma transação.',
+              'Nenhuma transação no sistema.',
               style: TextStyle(color: AppColors.textMuted),
             ),
           );
@@ -76,38 +119,89 @@ class TransactionsLogTab extends ConsumerWidget {
             return Card(
               color: AppColors.backgroundLight,
               margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                title: Text(
-                  '${t.ideaName} (${t.equityPercentage}%)',
-                  style: const TextStyle(
-                    color: AppColors.textWhite,
-                    fontWeight: FontWeight.bold,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => TransactionTimelineDialog(t: t),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardDark,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long,
+                          color: AppColors.gold,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.ideaName,
+                              style: const TextStyle(
+                                color: AppColors.textWhite,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${t.sharkId} -> ${t.proponentId}',
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildStatusBadge(t.status),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '\$${t.investmentValue.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: AppColors.emerald,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '${t.equityPercentage}%',
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.error,
+                              size: 20,
+                            ),
+                            onPressed: () => _deleteTransaction(context, t.id),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                subtitle: Text(
-                  '${t.sharkId} -> ${t.proponentId}',
-                  style: const TextStyle(color: AppColors.textMuted),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '\$${t.investmentValue.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: AppColors.emerald,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: AppColors.error,
-                        size: 20,
-                      ),
-                      onPressed: () => _deleteTransaction(context, t.id),
-                    ),
-                  ],
                 ),
               ),
             );

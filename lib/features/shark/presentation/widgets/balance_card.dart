@@ -3,8 +3,9 @@ import '../../../../core/constants/app_colors.dart';
 
 class BalanceCard extends StatelessWidget {
   final double balance;
+  final double reserved;
 
-  const BalanceCard({super.key, required this.balance});
+  const BalanceCard({super.key, required this.balance, required this.reserved});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +33,7 @@ class BalanceCard extends StatelessWidget {
       child: Column(
         children: [
           const Text(
-            'CAPITAL DISPONÍVEL',
+            'CAPITAL DISPONÍVEL LIVRE',
             style: TextStyle(
               color: AppColors.textMuted,
               letterSpacing: 2,
@@ -49,6 +50,16 @@ class BalanceCard extends StatelessWidget {
               shadows: [Shadow(color: AppColors.gold, blurRadius: 10)],
             ),
           ),
+          const SizedBox(height: 8),
+          if (reserved > 0)
+            Text(
+              'Em Propostas (Congelado): \$${reserved.toStringAsFixed(2)}',
+              style: const TextStyle(
+                color: AppColors.error,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
         ],
       ),
     );

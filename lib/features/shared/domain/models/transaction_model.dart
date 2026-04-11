@@ -5,6 +5,13 @@ class TransactionModel {
   final String ideaName;
   final double investmentValue;
   final double equityPercentage;
+
+  // Máquina de Estados e Contraproposta
+  final String
+  status; // 'pending_proponent', 'counter_offered', 'accepted', 'rejected'
+  final double? counterValue;
+  final double? counterEquity;
+
   final DateTime timestamp;
 
   TransactionModel({
@@ -14,6 +21,9 @@ class TransactionModel {
     required this.ideaName,
     required this.investmentValue,
     required this.equityPercentage,
+    required this.status,
+    this.counterValue,
+    this.counterEquity,
     required this.timestamp,
   });
 
@@ -28,6 +38,10 @@ class TransactionModel {
       ideaName: map['ideaName'] ?? '',
       investmentValue: map['investmentValue']?.toDouble() ?? 0.0,
       equityPercentage: map['equityPercentage']?.toDouble() ?? 0.0,
+      // Se não tiver status no antigo db, já foi 'accepted'
+      status: map['status'] ?? 'accepted',
+      counterValue: map['counterValue']?.toDouble(),
+      counterEquity: map['counterEquity']?.toDouble(),
       timestamp: map['timestamp'] != null
           ? DateTime.parse(map['timestamp'])
           : DateTime.now(),
@@ -41,6 +55,9 @@ class TransactionModel {
       'ideaName': ideaName,
       'investmentValue': investmentValue,
       'equityPercentage': equityPercentage,
+      'status': status,
+      if (counterValue != null) 'counterValue': counterValue,
+      if (counterEquity != null) 'counterEquity': counterEquity,
       'timestamp': timestamp.toIso8601String(),
     };
   }
