@@ -99,8 +99,9 @@ class ProponentDashboardScreen extends ConsumerWidget {
                                 currentName: liveUser.ideaName ?? '',
                               ),
                             );
-                            if (newName != null && newName.isNotEmpty)
+                            if (newName != null && newName.isNotEmpty) {
                               controller.updateIdeaName(liveUser.id, newName);
+                            }
                           },
                         ),
                       ],

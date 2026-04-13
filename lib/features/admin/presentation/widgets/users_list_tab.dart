@@ -9,6 +9,7 @@ import 'user_form_dialog.dart';
 class UsersListTab extends ConsumerWidget {
   const UsersListTab({super.key});
 
+  // Função para deletar um usuário diretamente do Firestore
   void _deleteDocument(BuildContext context, String docId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -46,6 +47,7 @@ class UsersListTab extends ConsumerWidget {
     }
   }
 
+  // Função para abrir o formulário em modo de edição
   void _openEditModal(BuildContext context, UserModel user) {
     showDialog(
       context: context,
@@ -55,6 +57,7 @@ class UsersListTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Escutando a lista de usuários em tempo real através do provider
     final usersAsync = ref.watch(usersStreamProvider);
 
     return usersAsync.when(
@@ -65,112 +68,154 @@ class UsersListTab extends ConsumerWidget {
         child: Text('Erro: $e', style: const TextStyle(color: AppColors.error)),
       ),
       data: (users) {
+        // Separando os usuários por papel para a organização da lista
         final sharks = users.where((u) => u.role == 'shark').toList();
         final proponents = users.where((u) => u.role == 'proponent').toList();
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           children: [
-            // Sessão Sharks
-            Theme(
-              data: Theme.of(
-                context,
-              ).copyWith(dividerColor: Colors.transparent), // Remove linha feia
-              child: ExpansionTile(
-                initiallyExpanded: true,
-                collapsedBackgroundColor: AppColors.cardDark,
-                backgroundColor: AppColors.cardDark,
-                iconColor: AppColors.gold,
-                collapsedIconColor: AppColors.gold,
-                title: const Text(
-                  '🦈 Sharks (Investidores)',
-                  style: TextStyle(
-                    color: AppColors.gold,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                children: sharks
-                    .map((shark) => _buildUserCard(context, shark))
-                    .toList(),
-              ),
+            _buildSectionHeader(
+              context,
+              title: 'INVESTIDORES (SHARKS)',
+              icon: Icons.payments_outlined,
+              color: AppColors.gold,
             ),
+            ...sharks.map((shark) => _buildUserCard(context, shark)),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
 
-            // Sessão Proponentes
-            Theme(
-              data: Theme.of(
-                context,
-              ).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                collapsedBackgroundColor: AppColors.cardDark,
-                backgroundColor: AppColors.cardDark,
-                iconColor: AppColors.emerald,
-                collapsedIconColor: AppColors.emerald,
-                title: const Text(
-                  '💡 Proponentes (Startups)',
-                  style: TextStyle(
-                    color: AppColors.emerald,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                children: proponents
-                    .map((prop) => _buildUserCard(context, prop))
-                    .toList(),
-              ),
+            _buildSectionHeader(
+              context,
+              title: 'STARTUPS (PROPONENTES)',
+              icon: Icons.rocket_launch_outlined,
+              color: AppColors.emerald,
             ),
+            ...proponents.map((prop) => _buildUserCard(context, prop)),
           ],
         );
       },
     );
   }
 
+  // Widget para os cabeçalhos das seções (Substitui os ExpansionTiles)
+  Widget _buildSectionHeader(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const Spacer(),
+          // ignore: deprecated_member_use
+          Container(height: 1, width: 40, color: color.withOpacity(0.3)),
+        ],
+      ),
+    );
+  }
+
+  // Widget para o card individual de cada usuário com design Premium
   Widget _buildUserCard(BuildContext context, UserModel user) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      title: Text(
-        user.name,
-        style: const TextStyle(
-          color: AppColors.textWhite,
-          fontWeight: FontWeight.bold,
+    final bool isShark = user.role == 'shark';
+    final Color accentColor = isShark ? AppColors.gold : AppColors.emerald;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(color: accentColor, width: 4),
+        ), // Destaque lateral colorido
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Text(
+          user.name.toUpperCase(),
+          style: const TextStyle(
+            color: AppColors.textWhite,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            letterSpacing: 0.5,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'UID: ${user.id}',
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (isShark)
+                _buildInfoRow(
+                  Icons.account_balance_wallet_outlined,
+                  'Disponível: \$${user.availableCapital?.toStringAsFixed(0)}',
+                  AppColors.gold,
+                )
+              else
+                _buildInfoRow(
+                  Icons.lightbulb_outline,
+                  'Ideia: ${user.ideaName}',
+                  AppColors.emerald,
+                ),
+            ],
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit_note, color: AppColors.textMuted),
+              onPressed: () => _openEditModal(context, user),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.delete_sweep_outlined,
+                color: AppColors.error,
+              ),
+              onPressed: () => _deleteDocument(context, user.id),
+            ),
+          ],
         ),
       ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ID: ${user.id}',
-            style: const TextStyle(color: AppColors.textMuted),
+    );
+  }
+
+  // Helper para criar as linhas de informações (Capital ou Ideia) com ícone
+  Widget _buildInfoRow(IconData icon, String text, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
-          if (user.role == 'shark')
-            Text(
-              'Disponível: \$${user.availableCapital?.toStringAsFixed(0)} | Congelado: \$${user.reservedCapital?.toStringAsFixed(0)}',
-              style: const TextStyle(color: AppColors.gold, fontSize: 12),
-            ),
-          if (user.role == 'proponent')
-            Text(
-              'Ideia: ${user.ideaName} | Equity Cedido: ${user.equityGiven}%',
-              style: const TextStyle(color: AppColors.emerald, fontSize: 12),
-            ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: AppColors.textMuted, size: 20),
-            onPressed: () => _openEditModal(context, user),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
-              color: AppColors.error,
-              size: 20,
-            ),
-            onPressed: () => _deleteDocument(context, user.id),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

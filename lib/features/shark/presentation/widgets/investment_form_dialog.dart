@@ -61,6 +61,7 @@ class _InvestmentFormDialogState extends ConsumerState<InvestmentFormDialog> {
 
     final state = ref.read(investmentControllerProvider);
     if (state.hasError) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro: ${state.error}'),

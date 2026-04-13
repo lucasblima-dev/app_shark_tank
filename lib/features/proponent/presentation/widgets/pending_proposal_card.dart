@@ -92,12 +92,13 @@ class PendingProposalCard extends ConsumerWidget {
                         originalEquity: transaction.equityPercentage,
                       ),
                     );
-                    if (result != null)
+                    if (result != null) {
                       controller.counterProposal(
                         transaction,
                         result['val']!,
                         result['eq']!,
                       );
+                    }
                   },
                 ),
                 // RECUSAR
