@@ -27,7 +27,7 @@ class AdminDashboardScreen extends StatelessWidget {
         ),
         appBar: AppBar(
           title: const Text(
-            'Painel do Professor',
+            'Painel do Admin',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: AppColors.backgroundLight,
