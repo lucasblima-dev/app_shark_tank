@@ -4,13 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
-//import '../../shared/domain/models/user_model.dart';
-//import '../../../shared/data/shared_providers.dart';
 import '../../auth/presentation/login_screen.dart';
 import 'widgets/balance_card.dart';
 import 'widgets/proponent_showcase_card.dart';
 import 'widgets/shark_counter_offer_card.dart';
-import '../../proponent/presentation/widgets/accepted_card_shark.dart';
+// Removemos a importação do AcceptedSharkCard antigo, pois criaremos uma visão customizada aqui.
 
 class SharkDashboardScreen extends ConsumerWidget {
   final UserModel sharkUser;
@@ -19,7 +17,7 @@ class SharkDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // corrigir o bug do saldo estático
+    // Escutando provedores
     final usersAsync = ref.watch(usersStreamProvider);
     final transactionsAsync = ref.watch(transactionsStreamProvider);
 
@@ -69,6 +67,28 @@ class SharkDashboardScreen extends ConsumerWidget {
               final acceptedDeals = myTransactions
                   .where((t) => t.status == 'accepted')
                   .toList();
+
+              // 1. Lógica de Agrupamento: Consolida investimentos da MESMA Startup
+              final Map<String, Map<String, dynamic>> aggregatedPortfolio = {};
+
+              for (var t in acceptedDeals) {
+                final key = t.ideaName; // Agrupa pelo nome da Startup
+                if (aggregatedPortfolio.containsKey(key)) {
+                  // Se já investiu antes, apenas soma o valor e o equity
+                  aggregatedPortfolio[key]!['totalValue'] += t.investmentValue;
+                  aggregatedPortfolio[key]!['totalEquity'] +=
+                      t.equityPercentage;
+                } else {
+                  // Se é o primeiro investimento nessa Startup, cria a entrada
+                  aggregatedPortfolio[key] = {
+                    'ideaName': t.ideaName,
+                    'totalValue': t.investmentValue,
+                    'totalEquity': t.equityPercentage,
+                  };
+                }
+              }
+              // Transforma o mapa agrupado de volta em uma lista para o ListView
+              final portfolioList = aggregatedPortfolio.values.toList();
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
@@ -137,7 +157,7 @@ class SharkDashboardScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    acceptedDeals.isEmpty
+                    portfolioList.isEmpty
                         ? const Center(
                             child: Text(
                               'Você ainda não fechou negócios.',
@@ -147,10 +167,40 @@ class SharkDashboardScreen extends ConsumerWidget {
                         : ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: acceptedDeals.length,
-                            itemBuilder: (context, index) => AcceptedSharkCard(
-                              transaction: acceptedDeals[index],
-                            ),
+                            itemCount: portfolioList.length,
+                            itemBuilder: (context, index) {
+                              final item = portfolioList[index];
+
+                              // 2. Novo Card Consolidado (Substitui o AcceptedSharkCard)
+                              return Card(
+                                color: AppColors.cardDark,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.rocket_launch,
+                                    color: AppColors.emerald,
+                                  ),
+                                  title: Text(
+                                    item['ideaName']
+                                        .toString()
+                                        .toUpperCase(), // Nome da Startup
+                                    style: const TextStyle(
+                                      color: AppColors.textWhite,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  trailing: Text(
+                                    '\$${item['totalValue'].toStringAsFixed(0)} (${item['totalEquity'].toStringAsFixed(1)}%)',
+                                    style: const TextStyle(
+                                      color: AppColors.emerald,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                   ],
                 ),

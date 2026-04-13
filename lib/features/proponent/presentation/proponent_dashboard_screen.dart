@@ -9,7 +9,7 @@ import 'controllers/proponent_controller.dart';
 import 'widgets/valuation_card.dart';
 import 'widgets/proponent_dialogs.dart';
 import 'widgets/pending_proposal_card.dart';
-import './widgets/accepted_card_shark.dart';
+// O widget AcceptedSharkCard antigo foi removido desta tela para criarmos a versão consolidada
 
 class ProponentDashboardScreen extends ConsumerWidget {
   final UserModel proponentUser;
@@ -58,6 +58,7 @@ class ProponentDashboardScreen extends ConsumerWidget {
             ),
             error: (e, stack) => Center(child: Text('Erro nas transações: $e')),
             data: (allTransactions) {
+              // Filtra as transações para pegar apenas as desta startup
               final myInvestments = allTransactions
                   .where((t) => t.proponentId == liveUser.id)
                   .toList();
@@ -71,6 +72,36 @@ class ProponentDashboardScreen extends ConsumerWidget {
                 0.0,
                 (sum, t) => sum + t.investmentValue,
               );
+
+              // 1. Lógica de Agrupamento: Consolida investimentos do MESMO Shark
+              final Map<String, Map<String, dynamic>> aggregatedSharks = {};
+
+              for (var t in acceptedProps) {
+                final key = t.sharkId; // Agrupa usando o ID único do Shark
+                if (aggregatedSharks.containsKey(key)) {
+                  // Se já existe investimento desse shark na startup, apenas soma
+                  aggregatedSharks[key]!['totalValue'] += t.investmentValue;
+                  aggregatedSharks[key]!['totalEquity'] += t.equityPercentage;
+                } else {
+                  // Se é o primeiro aporte deste shark, busca o nome real na lista de usuários
+                  final sharkUser = users.firstWhere(
+                    (u) => u.id == t.sharkId,
+                    orElse: () => UserModel(
+                      id: t.sharkId,
+                      name: t.sharkId,
+                      role: 'shark',
+                    ),
+                  );
+
+                  aggregatedSharks[key] = {
+                    'sharkName': sharkUser.name,
+                    'totalValue': t.investmentValue,
+                    'totalEquity': t.equityPercentage,
+                  };
+                }
+              }
+              // Converte o dicionário de volta para uma lista
+              final sharkList = aggregatedSharks.values.toList();
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
@@ -135,7 +166,7 @@ class ProponentDashboardScreen extends ConsumerWidget {
                     ],
 
                     const Text(
-                      'MEUS SHARKS',
+                      'INVESTIDORES',
                       style: TextStyle(
                         color: AppColors.textWhite,
                         fontSize: 18,
@@ -144,7 +175,7 @@ class ProponentDashboardScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    acceptedProps.isEmpty
+                    sharkList.isEmpty
                         ? const Center(
                             child: Text(
                               'Nenhum acordo fechado ainda.',
@@ -154,10 +185,38 @@ class ProponentDashboardScreen extends ConsumerWidget {
                         : ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: acceptedProps.length,
+                            itemCount: sharkList.length,
                             itemBuilder: (context, index) {
-                              return AcceptedSharkCard(
-                                transaction: acceptedProps[index],
+                              final item = sharkList[index];
+
+                              // 2. Novo Card Consolidado com o Nome Real do Shark
+                              return Card(
+                                color: AppColors.cardDark,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.monetization_on,
+                                    color: AppColors.emerald,
+                                  ),
+                                  title: Text(
+                                    item['sharkName']
+                                        .toString()
+                                        .toUpperCase(), // Nome da pessoa em destaque
+                                    style: const TextStyle(
+                                      color: AppColors.textWhite,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  trailing: Text(
+                                    '\$${item['totalValue'].toStringAsFixed(0)} (${item['totalEquity'].toStringAsFixed(1)}%)',
+                                    style: const TextStyle(
+                                      color: AppColors.emerald,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
                               );
                             },
                           ),

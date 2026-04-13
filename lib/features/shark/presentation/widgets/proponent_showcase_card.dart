@@ -67,7 +67,7 @@ class ProponentShowcaseCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'Equity Cedido: $equityGiven%',
+                'Percentual Cedido: $equityGiven%',
                 style: TextStyle(
                   color: isLocked ? AppColors.error : AppColors.emerald,
                   fontSize: 12,
