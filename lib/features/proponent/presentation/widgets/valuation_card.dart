@@ -44,7 +44,7 @@ class ValuationCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'EQUITY CEDIDO: $totalEquity%',
+            'PERCENTUAL CEDIDO: $totalEquity%',
             style: const TextStyle(
               color: AppColors.error,
               fontWeight: FontWeight.bold,

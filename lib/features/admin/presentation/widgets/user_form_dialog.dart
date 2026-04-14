@@ -66,10 +66,12 @@ class _UserFormDialogState extends State<UserFormDialog> {
         SnackBar(
           content: Text(
             widget.userToEdit == null
-                ? 'Usuário criado!'
-                : 'Usuário atualizado!',
+                ? 'Participante cadastrado com sucesso!'
+                : 'Cadastro atualizado com sucesso!',
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: AppColors.emerald,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -81,9 +83,18 @@ class _UserFormDialogState extends State<UserFormDialog> {
 
     return AlertDialog(
       backgroundColor: AppColors.backgroundLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Colors.white10),
+      ),
       title: Text(
-        isEditing ? 'Editar Participante' : 'Novo Participante',
-        style: const TextStyle(color: AppColors.textWhite),
+        isEditing ? 'EDITAR PARTICIPANTE' : 'NOVO PARTICIPANTE',
+        style: const TextStyle(
+          color: AppColors.textWhite,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
+          fontSize: 16,
+        ),
       ),
       content: SingleChildScrollView(
         child: Form(
@@ -91,39 +102,104 @@ class _UserFormDialogState extends State<UserFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Só permite escolher o papel se for criação
-              if (!isEditing)
+              if (!isEditing) ...[
+                // Label externo corrige o bug de sobreposição do Flutter
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text(
+                      'TIPO DE CONTA',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
                 DropdownButtonFormField<String>(
                   initialValue: _role,
-                  dropdownColor: AppColors.cardDark,
-                  style: const TextStyle(color: AppColors.textWhite),
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de Usuário',
-                    labelStyle: TextStyle(color: AppColors.textMuted),
+                  isExpanded:
+                      true, // Garante que textos grandes não quebrem o layout
+                  dropdownColor: AppColors.backgroundDark,
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: AppColors.gold,
+                  ),
+                  decoration: InputDecoration(
+                    // Padding interno ajustado para combinar com o PremiumTextField
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.backgroundDark,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   items: const [
                     DropdownMenuItem(
                       value: 'shark',
-                      child: Text('🦈 Shark (Investidor)'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.payments_outlined,
+                            color: AppColors.gold,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'INVESTIDOR (SHARK)',
+                            style: TextStyle(
+                              color: AppColors.gold,
+                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     DropdownMenuItem(
                       value: 'proponent',
-                      child: Text('💡 Proponente (Startup)'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.rocket_launch_outlined,
+                            color: AppColors.emerald,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'STARTUP (PROPONENTE)',
+                            style: TextStyle(
+                              color: AppColors.emerald,
+                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                   onChanged: (val) => setState(() => _role = val!),
                 ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 20),
+              ],
+
               PremiumTextField(
                 controller: _idController,
                 label: 'ID Único (Login)',
-                icon: Icons.badge,
+                icon: Icons.badge_outlined,
               ),
               const SizedBox(height: 16),
               PremiumTextField(
                 controller: _nameController,
                 label: 'Nome Completo',
-                icon: Icons.person,
+                icon: Icons.person_outline,
               ),
               const SizedBox(height: 16),
 
@@ -132,34 +208,50 @@ class _UserFormDialogState extends State<UserFormDialog> {
                 PremiumTextField(
                   controller: _capitalController,
                   label: 'Capital Inicial (\$)',
-                  icon: Icons.attach_money,
+                  icon: Icons.account_balance_wallet_outlined,
                   isNumber: true,
                 ),
               if (_role == 'proponent')
                 PremiumTextField(
                   controller: _ideaController,
-                  label: 'Nome da Ideia/Startup',
-                  icon: Icons.lightbulb_outline,
+                  label: 'Nome da Startup',
+                  icon: Icons.domain,
                 ),
             ],
           ),
         ),
       ),
+      actionsPadding: const EdgeInsets.only(right: 24, bottom: 24, top: 8),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text(
-            'Cancelar',
-            style: TextStyle(color: AppColors.textMuted),
+            'CANCELAR',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
           ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.emerald,
             foregroundColor: Colors.black,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           onPressed: _saveUser,
-          child: const Text('Salvar'),
+          child: Text(
+            isEditing ? 'ATUALIZAR' : 'CADASTRAR',
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
         ),
       ],
     );

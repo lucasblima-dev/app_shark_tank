@@ -131,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.black)
                       : const Text(
-                          'ENTRAR NO TANK',
+                          'ENTRAR',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
