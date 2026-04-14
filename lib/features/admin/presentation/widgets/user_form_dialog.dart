@@ -103,7 +103,6 @@ class _UserFormDialogState extends State<UserFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!isEditing) ...[
-                // Label externo corrige o bug de sobreposição do Flutter
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Padding(
@@ -120,16 +119,17 @@ class _UserFormDialogState extends State<UserFormDialog> {
                   ),
                 ),
                 DropdownButtonFormField<String>(
-                  initialValue: _role,
-                  isExpanded:
-                      true, // Garante que textos grandes não quebrem o layout
+                  value: _role,
+                  isExpanded: true, // Fundamental para evitar quebra de layout
                   dropdownColor: AppColors.backgroundDark,
-                  icon: const Icon(
+                  // A cor da seta agora muda dinamicamente para combinar com o tipo selecionado
+                  icon: Icon(
                     Icons.arrow_drop_down,
-                    color: AppColors.gold,
+                    color: _role == 'shark'
+                        ? AppColors.gold
+                        : AppColors.emerald,
                   ),
                   decoration: InputDecoration(
-                    // Padding interno ajustado para combinar com o PremiumTextField
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -141,6 +141,30 @@ class _UserFormDialogState extends State<UserFormDialog> {
                       borderSide: BorderSide.none,
                     ),
                   ),
+                  // O selectedItemBuilder garante que quando o botão está fechado, o layout fique limpo
+                  selectedItemBuilder: (BuildContext context) {
+                    return [
+                      const Text(
+                        'INVESTIDOR (SHARK)',
+                        style: TextStyle(
+                          color: AppColors.gold,
+                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow
+                            .ellipsis, // Corta o texto se a tela for muito pequena
+                      ),
+                      const Text(
+                        'STARTUP (PROPONENTE)',
+                        style: TextStyle(
+                          color: AppColors.emerald,
+                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ];
+                  },
                   items: const [
                     DropdownMenuItem(
                       value: 'shark',
@@ -152,12 +176,15 @@ class _UserFormDialogState extends State<UserFormDialog> {
                             size: 20,
                           ),
                           SizedBox(width: 12),
-                          Text(
-                            'INVESTIDOR (SHARK)',
-                            style: TextStyle(
-                              color: AppColors.gold,
-                              letterSpacing: 0.5,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              'INVESTIDOR (SHARK)',
+                              style: TextStyle(
+                                color: AppColors.gold,
+                                letterSpacing: 0.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -173,12 +200,15 @@ class _UserFormDialogState extends State<UserFormDialog> {
                             size: 20,
                           ),
                           SizedBox(width: 12),
-                          Text(
-                            'STARTUP (PROPONENTE)',
-                            style: TextStyle(
-                              color: AppColors.emerald,
-                              letterSpacing: 0.5,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              'STARTUP (PROPONENTE)',
+                              style: TextStyle(
+                                color: AppColors.emerald,
+                                letterSpacing: 0.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
