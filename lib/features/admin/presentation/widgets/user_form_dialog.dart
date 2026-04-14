@@ -119,7 +119,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
                   ),
                 ),
                 DropdownButtonFormField<String>(
-                  value: _role,
+                  initialValue: _role,
                   isExpanded: true, // Fundamental para evitar quebra de layout
                   dropdownColor: AppColors.backgroundDark,
                   // A cor da seta agora muda dinamicamente para combinar com o tipo selecionado
